@@ -1,0 +1,13 @@
+awsRegion: us-east-1
+
+rbac:
+  create: true
+  serviceAccountAnnotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::940850724251:role/cluster-autoscaler"
+
+autoDiscovery:
+  clusterName: test-eks-irsa
+  enabled: true
+#  tags:
+#    - k8s.io/cluster-autoscaler/enabled
+#    - k8s.io/cluster-autoscaler/{{ .Values.autoDiscovery.clusterName }}
