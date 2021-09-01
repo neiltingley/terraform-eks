@@ -1,5 +1,5 @@
 variable "region" {
-  default = "us-east-1"
+  default = "us-east-2"
 }
 
 variable "key-name" {
@@ -31,6 +31,12 @@ variable "map_roles" {
       groups   = ["system:masters"]
     },
   ]
+}
+
+variable "worker_ami_owner_id" {
+  description = "The ID of the owner for the AMI to use for the AWS EKS workers. Valid values are an AWS account ID, 'self' (the current account), or an AWS owner alias (e.g. 'amazon', 'aws-marketplace', 'microsoft')."
+  type        = string
+  default     = "self"
 }
 
 variable "map_users" {

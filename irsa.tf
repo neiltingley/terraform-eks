@@ -1,7 +1,6 @@
-
-data "aws_iam_policy_document" "cluster_autoscaler" {
+data "aws_iam_policy_document" "worker_autoscaling" {
   statement {
-    sid    = "clusterAutoscalerAll"
+    sid    = "eksWorkerAutoscalingAll"
     effect = "Allow"
 
     actions = [
@@ -16,7 +15,7 @@ data "aws_iam_policy_document" "cluster_autoscaler" {
   }
 
   statement {
-    sid    = "clusterAutoscalerOwn"
+    sid    = "eksWorkerAutoscalingOwn"
     effect = "Allow"
 
     actions = [

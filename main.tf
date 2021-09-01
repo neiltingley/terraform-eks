@@ -1,33 +1,16 @@
 terraform {
   backend "s3" {
-    bucket = "tfstatedevopsworksio"
+    bucket = "devopsworks-io-state-store"
     key = "state"
-    region = "us-east-1"
+    region = "eu-west-1"
 
   }
-  required_version = ">= 0.12.0"
 }
 
 provider "aws" {
-  version = "~> 2.23"
-  region  = var.region
+  region = var.region
 }
 
-provider "random" {
-  version = "~> 2.1"
-}
-
-provider "local" {
-  version = "~> 1.2"
-}
-
-provider "null" {
-  version = "~> 2.1"
-}
-
-provider "template" {
-  version = "~> 2.1"
-}
 
 data "aws_eks_cluster" "cluster" {
   name = module.eks.cluster_id
@@ -50,7 +33,7 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
   token                  = data.aws_eks_cluster_auth.cluster.token
   load_config_file       = false
-  version                = "~> 1.11"
+
 }
 
 data "aws_availability_zones" "available" {
@@ -114,7 +97,8 @@ resource "aws_security_group" "all_worker_mgmt" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "2.6.0"
+  version = "3.7.0"
+
 
   name                 = "test-vpc"
   cidr                 = "10.0.0.0/16"
@@ -138,6 +122,8 @@ module "vpc" {
 
 module "eks" {
   source ="terraform-aws-modules/eks/aws"
+  version = "17.6.0"
+  cluster_version = "1.17"
   cluster_name = local.cluster_name
   subnets      = module.vpc.private_subnets
 
@@ -149,18 +135,24 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-
   node_groups_defaults = {
     ami_type  = "AL2_x86_64"
     disk_size = 50
   }
 
 
-  worker_groups = [
+  worker_groups_launch_template = [
     {
-      name                 = "worker-group-1"
-      instance_type        = "t2.medium"
-      asg_desired_capacity = 1
+      name                    = "r-xlarge-spot"
+      override_instance_types = ["t3.medium", "t3.large"]
+      spot_instance_pools     = 2
+      asg_max_size            = 8
+      asg_min_size            = 0
+      asg_desired_capacity    = 2
+      kubelet_extra_args      = "--node-labels=kubernetes.io/lifecycle=spot"
+      public_ip               = true
+      autoscalling_enabled    = true
+
       tags = [
         {
           key = "k8s.io/cluster-autoscaler/enabled"
@@ -172,11 +164,10 @@ module "eks" {
           propagate_at_launch = "false"
           value = "true"
         }
-      ]
-    }
-  ]
+        ]
+    }]
 
-  worker_additional_security_group_ids = [aws_security_group.all_worker_mgmt.id]
+
   map_roles                            = var.map_roles
   map_users                            = var.map_users
   map_accounts                         = var.map_accounts
@@ -186,13 +177,13 @@ module "eks" {
 resource "aws_iam_policy" "cluster_autoscaler" {
   name_prefix = "cluster-autoscaler"
   description = "EKS cluster-autoscaler policy for cluster ${module.eks.cluster_id}"
-  policy      = data.aws_iam_policy_document.cluster_autoscaler.json
+  policy      = data.aws_iam_policy_document.worker_autoscaling.json
 }
 
 
 module "iam_assumable_role_admin" {
   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version                       = "~> v2.6.0"
+  version                       = "~> v4.3.0"
   create_role                   = true
   role_name                     = "cluster-autoscaler"
   provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
@@ -201,13 +192,8 @@ module "iam_assumable_role_admin" {
 
 }
 
-
-data "helm_repository" "stable" {
-  name = "stable"
-  url  = "https://kubernetes-charts.storage.googleapis.com"
-}
-
-resource "helm_release" "mydatabase" {
+resource "helm_release" "autoscaler" {
+  repository = "https://kubernetes-charts.storage.googleapis.com"
   name  = "cluster-autoscaler"
   chart = "stable/cluster-autoscaler"
   namespace = "kube-system"
@@ -217,9 +203,8 @@ resource "helm_release" "mydatabase" {
 
   set {
     name  = "image.tag"
-    value = "v1.16.3"
+    value = "v1.17.1"
   }
-
 
 }
 
