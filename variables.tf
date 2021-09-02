@@ -1,5 +1,5 @@
 variable "region" {
-  default = "us-east-2"
+  default = "eu-west-1"
 }
 
 variable "key-name" {
@@ -56,3 +56,4 @@ variable "map_users" {
 
   ]
 }
+
