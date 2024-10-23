@@ -150,7 +150,8 @@ resource "aws_eks_node_group" "main" {
     max_size     = each.value.max_size
     min_size     = each.value.min_size
   }
-
+  
+  
   launch_template {
     id      = aws_launch_template.eks_node_group.id
     version = "$Latest"
@@ -215,22 +216,28 @@ data "tls_certificate" "eks" {
   url = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
 
-resource "aws_iam_openid_connect_provider" "eks" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
+# resource "aws_iam_openid_connect_provider" "eks" {
+#   client_id_list  = ["sts.amazonaws.com"]
+#   thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+#   url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
+# }
+
+
+
+locals {
+  issuer = aws_iam_openid_connect_provider.eks.url
 }
 
 resource "aws_eks_identity_provider_config" "eks" {
-  cluster_name = aws_eks_cluster.main.name
+    cluster_name = var.cluster_name
   oidc {
-    identity_provider_config_name = "oidc"
-    client_id                     = aws_iam_openid_connect_provider.eks.id
-    #  id = "arn:aws:iam::728277589254:oidc-provider/oidc.eks.eu-west-2.amazonaws.com/id/C69A325AED7D47F3716B6602831BE2DD"
-    issuer_url                    = aws_eks_cluster.main.identity[0].oidc[0].issuer
-    # https://oidc.eks.eu-west-2.amazonaws.com/id/C69A325AED7D47F3716B6602831BE2DD"
+    client_id                     = "0B386797C0CDAF6F6656947BAD66E084"
+    identity_provider_config_name = "sdemonew"
+    issuer_url                    = "https://${aws_eks_cluster.main.identity[0].oidc[0].issuer}"
+
   }
 }
+
 # The Identity Provider URL cannot be same as OpenID Connect (OIDC) issuer URL
 ############################################################################################################
 ### IAM ROLES
@@ -265,6 +272,11 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 
 resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+  role       = aws_iam_role.eks_cluster_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_mazonEBSCSIDriverPolicy_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
   role       = aws_iam_role.eks_cluster_role.name
 }
 
@@ -403,16 +415,6 @@ resource "aws_security_group" "eks_nodes_sg" {
   }
 }
 
-# Unneccessary because all outbound traffic from worker nodes is allowed by worker_node_egress_internet rule
-# resource "aws_security_group_rule" "worker_node_to_control_plane_egress_https" {
-#   type                     = "egress"
-#   from_port                = 443
-#   to_port                  = 443
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.eks_nodes_sg.id
-#   source_security_group_id = aws_security_group.eks_cluster_sg.id
-#   description              = "Allow worked node to control plane/Kubernetes API egress for HTTPS"
-# }
 
 resource "aws_security_group_rule" "worker_node_ingress_nginx" {
   type                     = "ingress"
@@ -541,6 +543,12 @@ resource "kubernetes_config_map" "aws_auth" {
         userarn  = data.aws_caller_identity.current.arn
         username = split("/", data.aws_caller_identity.current.arn)[1]
         groups   = ["system:masters"]
+      },
+      { 
+        userarn = "arn:aws:iam::728277589254:user/thump-admin"
+        username = split("/", data.aws_caller_identity.current.arn)[1]
+        groups   = ["system:masters"]
+
       }
     ])
   }
