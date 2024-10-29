@@ -224,9 +224,9 @@ data "tls_certificate" "eks" {
 
 
 
-locals {
-  issuer = aws_iam_openid_connect_provider.eks.url
-}
+# locals {
+#   issuer = aws_iam_openid_connect_provider.eks.url
+# }
 
 resource "aws_eks_identity_provider_config" "eks" {
     cluster_name = var.cluster_name
@@ -482,7 +482,6 @@ resource "aws_security_group_rule" "worker_node_egress_internet" {
 # Define IAM Role for EKS Administrators
 resource "aws_iam_role" "eks_admins_role" {
   name = "${var.cluster_name}-eks-admins-role"
-
   assume_role_policy = data.aws_iam_policy_document.eks_admins_assume_role_policy_doc.json
 }
 

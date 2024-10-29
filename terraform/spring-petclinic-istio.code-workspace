@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../../spring-petclinic-istio"
+		},
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../argo-helm"
+		}
+	],
+	"settings": {
+		"java.compile.nullAnalysis.mode": "automatic"
+	}
+}

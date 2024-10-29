@@ -74,3 +74,8 @@ variable "private_subnet_tags" {
   default     = {}
   description = "A map of tags to add to all private subnets."
 }
+variable "cluster_name" {
+  type = string
+  default = ""
+  description = "The name of the cluster"
+}
