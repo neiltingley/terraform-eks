@@ -19,6 +19,7 @@ module "eks" {
       service_account_role_arn = module.iam_eks_role.iam_role_arn
 
     }
+    
 
   }
   enable_irsa              = true
@@ -36,9 +37,9 @@ module "eks" {
   eks_managed_node_groups = {
     demo_group = {
       name           = "general"
-      desired_size   = 3
+      desired_size   = 5
       min_size       = 1
-      max_size       = 5
+      max_size       = 21
       instance_types = ["t3a.small"]
       type           = "spot"
       
@@ -74,6 +75,7 @@ resource "null_resource" "kubectl" {
 }
 
 
+
 module "iam_eks_role" {
   
   source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
@@ -87,6 +89,30 @@ module "iam_eks_role" {
     one = {
       provider_arn               = "${module.eks.oidc_provider_arn}"
       namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "EKSClusterAutoscalerPolicy" {
+  name        = "EKSClusterAutoscalerolicy"
+  path        = "/"
+  description = "EKSClusterAutoscalerPolicy"
+  policy = file("policies/EKSClusterAutoscalerRole.json")
+  
+}
+module "iam_eks_autoscaler_role" {
+  
+  source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  role_name = "AmazonEKSAutoscalerRole"
+
+  role_policy_arns = {
+    policy = aws_iam_policy.EKSClusterAutoscalerPolicy.arn
+  }
+
+  oidc_providers = {
+    one = {
+      provider_arn               = "${module.eks.oidc_provider_arn}"
+      namespace_service_accounts = ["kube-system:cluster-autoscaler"]
     }
   }
 }
