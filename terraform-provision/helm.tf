@@ -55,8 +55,6 @@ resource "aws_acm_certificate" "argo" {
   
 }
 
-
-
 resource "aws_route53_record" "hello_cert_dns" {
   allow_overwrite = true
   name =  tolist(aws_acm_certificate.argo.domain_validation_options)[0].resource_record_name

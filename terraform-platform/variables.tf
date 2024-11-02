@@ -15,11 +15,6 @@ variable "cluster_name" {
   description = "Name of the EKS cluster"
 }
 
-# variable "aws_account_number" {
-#   type    = number
-#   default = 
-#   description = "AWS account number used for deployment."
-# }
 
 variable "global_tags" {
   type = map(string)
