@@ -5,6 +5,10 @@ variable "region" {
   description = "Target AWS region"
 }
 
+variable "eks_module_version" {
+  type = string
+  default = "20.27.0"
+}
 variable "cluster_name" {
   type        = string
   default     = "demo-cluster"

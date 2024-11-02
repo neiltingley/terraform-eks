@@ -1,17 +1,21 @@
 global:
-  domain: argocd.example.com
+  domain: argo.tools.devopsworks.io
 
 configs:
+  secret:
+    argocdServerAdminPassword: "$2a$12$eVupMQjfeybuYpSyACbsYuYs9S1tLFFc2hhHEtqvfH4beV2H69BTG"
   params:
     server.insecure: true
 
 server:
+  service:
+    type: ClusterIP
   ingress:
     enabled: true
     controller: aws
     ingressClassName: alb
     annotations:
-      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/scheme: external
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/backend-protocol: HTTP
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":80}, {"HTTPS":443}]'
