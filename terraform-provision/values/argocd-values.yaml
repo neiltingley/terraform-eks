@@ -1,9 +1,9 @@
 global:
   domain: argo.tools.devopsworks.io
-
+  namespace: argocd
 configs:
   secret:
-    argocdServerAdminPassword: "$2a$12$eVupMQjfeybuYpSyACbsYuYs9S1tLFFc2hhHEtqvfH4beV2H69BTG"
+    argocdServerAdminPassword: $2a$12$eVupMQjfeybuYpSyACbsYuYs9S1tLFFc2hhHEtqvfH4beV2H69BTG
   params:
     server.insecure: true
 
@@ -15,7 +15,7 @@ server:
     controller: aws
     ingressClassName: alb
     annotations:
-      alb.ingress.kubernetes.io/scheme: external
+      alb.ingress.kubernetes.io/scheme: internet-facing
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/backend-protocol: HTTP
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":80}, {"HTTPS":443}]'

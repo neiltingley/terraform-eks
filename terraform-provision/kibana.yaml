@@ -1,32 +1,33 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  namespace: elastic-system
+  namespace: elastic-stack
   annotations:
     # load balancer priority, lower numbers are evaluated first
-    # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-update-rules.html#update-rule-priority
+
     alb.ingress.kubernetes.io/group.order: "10"
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30" # in seconds
     alb.ingress.kubernetes.io/healthcheck-path: /healhtz
     alb.ingress.kubernetes.io/healty-threshold-count: "1"
-    # by default, it will create a listener rule on port 80
-    # you can specify both ports as well like this: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
     alb.ingress.kubernetes.io/scheme: internet-facing
-  name: nginx
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+
+  name: kibana
 spec:
   # if you have the `ingressclass.kubernetes.io/is-default-class=true`
   # annotation on the ingress class, you don't need this
   ingressClassName: alb
   rules:
-  - host: argo.tools.devopsworks.io
+  - host: kibana.tools.devopsworks.io
     http:
       paths:
       - backend:
           service:
-
-            name: quickstart-kb-http
+            name: ecs-stack-quickstart-eck-kibana-kb-http
+            namespace: elastic-stack
             port:
               number: 5601
         path: /

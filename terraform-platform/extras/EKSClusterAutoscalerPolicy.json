@@ -3,7 +3,7 @@
 	"Statement": [
 		{
 			"Effect": "Allow",
-			"Principal": {
+			"PriXncipal": {
 				"Federated": "arn:aws:iam::728277589254:oidc-provider/oidc.eks.eu-west-1.amazonaws.com/id/9A3F307085F2F31A34E7DD3B2DA5E46F"
 			},
 			"Action": "sts:AssumeRoleWithWebIdentity",

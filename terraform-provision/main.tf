@@ -1,6 +1,4 @@
-data "aws_eks_cluster" "demo-cluster" {
-  name = "demo-cluster"
-}
+
 data "aws_route53_zone" "devopsworksio" {
      name = "devopsworks.io"
  }
@@ -8,7 +6,6 @@ data "aws_route53_zone" "devopsworksio" {
 
  resource "aws_route53_zone" "tools"{
   name = "tools.devopsworks.io"
-
   tags = {
     Environment = "dev"
   }
@@ -23,36 +20,25 @@ resource "aws_route53_record" "tools" {
   records = aws_route53_zone.tools.name_servers
 }
 
+# trunk-ignore(checkov/CKV2_AWS_19)
 resource "aws_eip" "lb" {
-
+   domain       = "vpc"
 }
-
-
-
-resource "aws_route53_record" "argo" {
-  zone_id = aws_route53_zone.tools.id
-  name    = "argo.tools.devopsworks.io"
-  
-  type    = "CNAME"
-  ttl     = "30"
-  records = [  ]
-  
-}
-
-
 
 resource "aws_acm_certificate" "argo" {
-  domain_name = aws_route53_record.argo.name
+  domain_name = "tools.devopsworks.io"
   validation_method = "DNS"
-  
-  tags = {
-    Environment = "test"
-  }
+  subject_alternative_names = [
+ 
+  "*.tools.devopsworks.io"
+  ]
 
   lifecycle {
     create_before_destroy = true
   }
-  
+  tags = {
+    Environment = "test"
+  }
 }
 
 resource "aws_route53_record" "hello_cert_dns" {
@@ -97,8 +83,43 @@ resource "helm_release" "argocd" {
   name       = "argo"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
+  create_namespace = true
+  namespace = "argocd"
   values = [
-    "${file("argocd-values.yaml")}"
+    "${file("values/argocd-values.yaml")}"
   ]
+}
+
+resource "helm_release" "elastic-operator" {
+  name       = "elastic-operator"
+  repository = "https://elastic https://helm.elastic.co"
+  chart      = "elastic/eck-operator"
+  create_namespace = true
+  namespace = "elastic-system"
+  values = [
+    "${file("values/eck-values.yaml")}"
+  ]
+}
+
+# Install an eck-managed Elasticsearch and Kibana using the default values, which deploys the quickstart examples.
+#helm install es-kb-quickstart elastic/eck-stack -n elastic-stack --create-namespace
+
+resource "helm_release" "eck-stack" {
+  name       = "ecs-stack-quickstart"
+  repository = "https://elastic https://helm.elastic.co"
+  chart      = "elastic/eck-stack"
+  namespace = "elastic-stack"
+  create_namespace = true
+  values = [
+    "${file("values/ecs-stack-values.yaml")}"
+  ]
+  depends_on = [ helm_release.elastic-operator ]
+}
+
+resource "kubectl_manifest" "kibana-ingress" {
+  provider   = kubectl
+  yaml_body  = file("kibana.yaml")
+  depends_on = [ helm_release.eck-stack]
+
 }
 

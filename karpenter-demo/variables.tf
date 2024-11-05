@@ -11,7 +11,7 @@ variable "eks_module_version" {
 }
 variable "cluster_name" {
   type        = string
-  default     = "demo-cluster"
+  default     = "ex-karpenter-demo"
   description = "Name of the EKS cluster"
 }
 

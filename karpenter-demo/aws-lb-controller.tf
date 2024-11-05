@@ -1,4 +1,4 @@
-
+data "aws_caller_identity" "current" {}
 locals {
     caller = data.aws_caller_identity.current.id
 }

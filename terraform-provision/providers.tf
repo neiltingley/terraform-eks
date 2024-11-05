@@ -42,10 +42,18 @@ provider "aws" {
   }
 }
 
+data "aws_eks_cluster" "cluster" {
+  name = var.cluster_name
+}
+data "aws_eks_cluster_auth" "cluster-auth" {
+
+  name       = var.cluster_name
+}
 provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
+  host                   = data.aws_eks_cluster.cluster.endpoint
   #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.demo-cluster.certificate_authority[0].data)
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.cluster-auth.token
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
@@ -55,8 +63,10 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes {
-    host = data.aws_eks_cluster.demo-cluster.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.demo-cluster.certificate_authority[0].data)
+    host = data.aws_eks_cluster.cluster.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.cluster-auth.token
+    
     #cluster_ca_certificate = = base64decode(data.aws_eks_cluster.demo_cluster.aws_eks_cluster"
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
@@ -65,3 +75,12 @@ provider "helm" {
     }
   }
 }
+
+
+
+#  kubernetes {
+#     host                   = aws_eks_cluster.my_cluster.endpoint
+#     cluster_ca_certificate = base64decode(aws_eks_cluster.my_cluster.certificate_authority.0.data)
+#     token                  = data.aws_eks_cluster_auth.cluster-auth.token
+#     load_config_file       = false
+#   }

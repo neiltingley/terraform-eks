@@ -7,10 +7,9 @@ variable "region" {
 
 variable "cluster_name" {
   type        = string
-  default     = "demo-cluster"
+  default     = "ex-karpenter-demo"
   description = "Name of the EKS cluster"
 }
-
 # variable "aws_account_number" {
 #   type    = number
 #   default = 
