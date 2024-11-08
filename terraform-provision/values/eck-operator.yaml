@@ -1,0 +1,7 @@
+---
+
+tolerations:
+  - key: deployment
+    value: cost-optimized-spot-pool
+    operator: Equal
+    effect: NoSchedule

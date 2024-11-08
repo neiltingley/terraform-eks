@@ -70,6 +70,21 @@ module "eks" {
       service_account_role_arn = module.iam_eks_role.iam_role_arn
     }
   }
+  access_entries = {
+    thump = {
+      kubernetes_groups = ["cluster-admin"]
+      principal_arn     = "arn:aws:iam::728277589254:user/thump-admin"
+
+      policy_associations = {
+        cluster = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 
   vpc_id                   = module.vpc.vpc_id
   subnet_ids               = module.vpc.private_subnets
@@ -78,7 +93,8 @@ module "eks" {
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["m5.large"]
+      instance_types = ["t3.medium"]
+      type           = "SPOT"
 
       min_size     = 2
       max_size     = 3
@@ -121,9 +137,7 @@ module "karpenter" {
   version = "20.28.0"
 
   cluster_name = module.eks.cluster_name
-
   enable_v1_permissions = true
-
   enable_pod_identity             = true
   create_pod_identity_association = true
 
@@ -133,6 +147,13 @@ module "karpenter" {
   }
 
   tags = local.tags
+}
+
+resource "null_resource" "kubectl" {
+  provisioner "local-exec" {
+    command = "aws eks --region ${var.region} update-kubeconfig --name ${var.cluster_name}"
+  }
+  depends_on = [module.eks]
 }
 
 module "karpenter_disabled" {
@@ -208,21 +229,29 @@ resource "kubectl_manifest" "karpenter_node_pool" {
     spec:
       template:
         spec:
+          taints:
+            - key: deployment
+              effect: NoSchedule
+              value: cost-optimized-spot-pool
           nodeClassRef:
             name: default
           requirements:
-            - key: "karpenter.k8s.aws/instance-category"
+            - key: kubernetes.io/arch
               operator: In
-              values: ["c", "m", "r"]
+              values: ["amd64"]
+            - key: karpenter.sh/capacity-type
+              operator: In
+              values: ["spot"]
             - key: "karpenter.k8s.aws/instance-cpu"
               operator: In
-              values: ["4", "8", "16", "32"]
+              values: ["2","4"]
             - key: "karpenter.k8s.aws/instance-hypervisor"
               operator: In
               values: ["nitro"]
             - key: "karpenter.k8s.aws/instance-generation"
               operator: Gt
               values: ["2"]
+
       limits:
         cpu: 1000
       disruption:
@@ -237,7 +266,7 @@ resource "kubectl_manifest" "karpenter_node_pool" {
 
 
 resource "kubectl_manifest" "karpenter_example_deployment" {
-  yaml_body = <<-YAML
+  yaml_body        = <<-YAML
     apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -260,10 +289,10 @@ resource "kubectl_manifest" "karpenter_example_deployment" {
                 requests:
                   cpu: 1
   YAML
-
-#   depends_on = [
-#     helm_release.karpenter
-#   ]
+  wait_for_rollout = false
+  depends_on = [
+    kubectl_manifest.karpenter_node_pool
+  ]
 }
 
 ################################################################################

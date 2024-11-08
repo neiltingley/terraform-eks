@@ -7,13 +7,14 @@ metadata:
 
     alb.ingress.kubernetes.io/group.order: "10"
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30" # in seconds
-    alb.ingress.kubernetes.io/healthcheck-path: /healhtz
+    alb.ingress.kubernetes.io/healthcheck-path: /login
     alb.ingress.kubernetes.io/healty-threshold-count: "1"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    external-dns.alpha.kubernetes.io/hostname: kibana.tools.devopsworks.io
 
   name: kibana
 spec:
@@ -27,7 +28,6 @@ spec:
       - backend:
           service:
             name: ecs-stack-quickstart-eck-kibana-kb-http
-            namespace: elastic-stack
             port:
               number: 5601
         path: /

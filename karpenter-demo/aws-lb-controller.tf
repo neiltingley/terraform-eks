@@ -1,7 +1,3 @@
-data "aws_caller_identity" "current" {}
-locals {
-    caller = data.aws_caller_identity.current.id
-}
 
 resource "aws_iam_policy" "WSLoadBalancerControllerIAMPolicy" {
   name        = "WSLoadBalancerControllerIAMPolicy"
@@ -10,8 +6,6 @@ resource "aws_iam_policy" "WSLoadBalancerControllerIAMPolicy" {
   policy = file("policies/WSLoadBalancerControllerIAMPolicy.json")
 
 }
-
-
 
 module "iam_eks_role_lb" {
   source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
@@ -22,23 +16,21 @@ module "iam_eks_role_lb" {
   }
 
   oidc_providers = {
-    one = {
-      provider_arn       =    module.eks.oidc_provider_arn
-      namespace_service_accounts = [ "kube-system:aws-load-balancer-controller" ]
-    }
+      one = {
+        provider_arn       =    module.eks.oidc_provider_arn
+        namespace_service_accounts = [ "kube-system:aws-load-balancer-controller" ]
+      }
     }
     depends_on = [ aws_iam_policy.WSLoadBalancerControllerIAMPolicy ]
 }
 
 resource "kubernetes_service_account" "ebs-csi-controller-sa" {
-  
   metadata {
     name      = "aws-load-balancer-controller"
     namespace = "kube-system"
     annotations = {
       "eks.amazonaws.com/role-arn" = module.iam_eks_role_lb.iam_role_arn
     }
-
   }
 }
 

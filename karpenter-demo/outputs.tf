@@ -295,3 +295,9 @@ output "karpenter_instance_profile_unique" {
   description = "Stable and unique string identifying the IAM instance profile"
   value       = module.karpenter.instance_profile_unique
 }
+
+output "karpenter_service_account" {
+  description = "Karpenter service account"
+  value = module.karpenter.service_account
+
+}

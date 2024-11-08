@@ -1,0 +1,8 @@
+---
+tolerations:
+- key: CriticalAddonsOnly
+  operator: Exists
+- key: deployment
+  operator: Equal
+  value: cost-optimized-spot-pool
+  effect: "NoSchedule"
